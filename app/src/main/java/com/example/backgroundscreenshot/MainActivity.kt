@@ -31,8 +31,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         startServiceButton = findViewById(R.id.startServiceButton)
         serviceIntent = Intent(this, ScreenshotService::class.java)
+//        ContextCompat.startForegroundService(this, serviceIntent)
         startServiceButton.setOnClickListener {
-            startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(),REQUEST_MEDIA_PROJECTION)
+
+            startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), REQUEST_MEDIA_PROJECTION)
 
         }
 

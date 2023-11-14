@@ -5,9 +5,12 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -40,7 +43,7 @@ class ScreenshotService : Service() {
     private lateinit var imageReader: ImageReader
     private lateinit var virtualDisplay: VirtualDisplay
     private val handler = Handler(Looper.getMainLooper())
-    private var screenDensity = 0
+    private var screenDensity = 320
     private val NOTIFICATION_ID = 1
     private val NOTIFICATION_CHANNEL_ID = "ScreenshotServiceChannel"
 
@@ -49,34 +52,70 @@ class ScreenshotService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        initRunningTipNotification()
+        val notification = buildNotification()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
+            )
+        } else startForeground(
+            NOTIFICATION_ID,
+            notification
+        )
         if (intent != null) {
             val resultCode = intent.getIntExtra("resultCode", 0)
             val data = intent.getParcelableExtra<Intent>("data")
             init(resultCode, data)
         }
-        initRunningTipNotification()
-        val notification = buildNotification()
-        startForeground(NOTIFICATION_ID, notification)
-
         return START_NOT_STICKY
     }
 
     private fun buildNotification(): Notification {
-        val notificationIntent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
+        val channelId =
+            createNotificationChannel("my_service", "Capture Service")
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags =
+                Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT and Intent.FLAG_ACTIVITY_SINGLE_TOP and Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
             PendingIntent.FLAG_IMMUTABLE
         )
-        return NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle("Screenshot Service")
-            .setContentText("Service is running")
-            .setSmallIcon(R.mipmap.ic_launcher)
-            .setLargeIcon(
-                BitmapFactory.decodeResource(resources, R.mipmap.ic_launcher)
+
+        val notificationBuilder = NotificationCompat.Builder(this, channelId)
+        val notification = notificationBuilder.setOngoing(true)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setContentText(
+                "Service is running"
             )
+            // Set the intent that will fire when the user taps the notification
             .setContentIntent(pendingIntent)
-            .setOngoing(true)
+            .setCategory(Notification.CATEGORY_STATUS)
             .build()
+        return notification
+    }
+
+
+    private fun createNotificationChannel(channelId: String, channelName: String): String {
+        val chan = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel(
+                channelId,
+                channelName, NotificationManager.IMPORTANCE_NONE
+            )
+        } else {
+            return channelId
+        }
+        chan.lightColor = Color.BLUE
+        chan.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+        val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        service.createNotificationChannel(chan)
+        return channelId
     }
 
     private fun initRunningTipNotification() {
@@ -102,13 +141,13 @@ class ScreenshotService : Service() {
     }
 
     private fun init(resultCode: Int, data: Intent?) {
-        val metrics = DisplayMetrics()
-        screenDensity = metrics.densityDpi
-        mediaProjectionManager =
-            getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        mediaProjection = data?.let { mediaProjectionManager.getMediaProjection(resultCode, it) }!!
-        createImageReader()
-        startCapture()
+            val metrics = DisplayMetrics()
+            mediaProjectionManager =
+                getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+            mediaProjection =
+                data?.let { mediaProjectionManager.getMediaProjection(resultCode, it) }!!
+            createImageReader()
+            startCapture()
     }
 
     private fun createImageReader() {
@@ -124,6 +163,7 @@ class ScreenshotService : Service() {
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader.surface, null, null
         )
+        captureScreenshot()
         handler.postDelayed({
             captureScreenshot()
             virtualDisplay.release()
