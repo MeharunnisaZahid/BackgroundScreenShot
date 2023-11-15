@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -25,14 +26,17 @@ import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
 import android.util.SparseIntArray
 import android.view.Surface
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import com.example.backgroundscreenshot.MainActivity
 import com.example.backgroundscreenshot.R
+import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.nio.ByteBuffer
@@ -94,7 +98,6 @@ class ScreenshotService : Service() {
             .setContentText(
                 "Service is running"
             )
-            // Set the intent that will fire when the user taps the notification
             .setContentIntent(pendingIntent)
             .setCategory(Notification.CATEGORY_STATUS)
             .build()
@@ -103,7 +106,7 @@ class ScreenshotService : Service() {
 
 
     private fun createNotificationChannel(channelId: String, channelName: String): String {
-        val chan = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val chan = if (Build.VERSION.SDK_INT >= O) {
             NotificationChannel(
                 channelId,
                 channelName, NotificationManager.IMPORTANCE_NONE
@@ -121,7 +124,7 @@ class ScreenshotService : Service() {
     private fun initRunningTipNotification() {
         val builder: Notification.Builder
         var notificationManager: NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= O) {
             val channel = NotificationChannel(
                 "running",
                 "Running Notification",
@@ -141,7 +144,6 @@ class ScreenshotService : Service() {
     }
 
     private fun init(resultCode: Int, data: Intent?) {
-            val metrics = DisplayMetrics()
             mediaProjectionManager =
                 getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             mediaProjection =
@@ -172,39 +174,51 @@ class ScreenshotService : Service() {
     }
 
     private fun captureScreenshot() {
-        val image = imageReader.acquireLatestImage()
+        val image : Image = imageReader.acquireLatestImage()
         if (image != null) {
-            val bitmap = imageToBitmap(image)
+            imageToBitmap(image)
             image.close()
-            saveScreenshot(bitmap)
+        }
+    }
+
+    private fun imageToBitmap(image: Image) {
+        try {
+            val buffer: ByteBuffer = image.planes[0].buffer
+            val bytes = ByteArray(buffer.remaining())
+            buffer.get(bytes)
+
+            val filename = "${System.currentTimeMillis()}.jpg"
+            Log.d("FileName", "FileName: $filename")
+            val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
+            val imageFile = File(imagesDir, filename)
+            Log.e("FilePath", ":${imageFile.absolutePath}")
+
+            FileOutputStream(imageFile).use { outputStream ->
+                outputStream.write(bytes)
+            }
+
+            MediaScannerConnection.scanFile(
+                this,
+                arrayOf(imageFile.absolutePath),
+                arrayOf("image/jpeg"),
+                null
+            )
+
+            showToast("Image saved: ${imageFile.absolutePath}")
+        } catch (e: Exception) {
+            Log.e("CaptureScreenshot", "Error saving image: ${e.message}")
+            e.printStackTrace()
+            showToast("Error saving image")
         }
     }
 
 
-    private fun imageToBitmap(image: Image): Bitmap {
-        val buffer: ByteBuffer = image.planes[0].buffer
-        val bytes = ByteArray(buffer.remaining())
-        buffer.get(bytes)
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-    }
-
-    private fun saveScreenshot(bitmap: Bitmap) {
-        val filename = "${System.currentTimeMillis()}.jpg"
-        Log.d("FileName", "FileName:$filename")
-        val imagesDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM)
-        val imageFile = File(imagesDir, filename)
-        FileOutputStream(imageFile).use { outputStream ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+    private fun showToast(message: String) {
+        handler.post {
+            Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
         }
-
-        MediaScannerConnection.scanFile(
-            this,
-            arrayOf(imageFile.absolutePath),
-            arrayOf("image/jpeg"),
-            null
-        )
     }
+
 
     companion object {
         private const val DISPLAY_WIDTH = 720
