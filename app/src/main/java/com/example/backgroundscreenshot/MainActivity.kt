@@ -20,6 +20,7 @@ import com.example.backgroundscreenshot.services.ScreenshotService
 
 class MainActivity : AppCompatActivity() {
     private val REQUEST_MEDIA_PROJECTION = 1
+    private val REQUEST_CODE_SCREENSHOT= 1
     private val mediaProjectionManager: MediaProjectionManager by lazy {
         application.getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
     }
@@ -34,7 +35,7 @@ class MainActivity : AppCompatActivity() {
 //        ContextCompat.startForegroundService(this, serviceIntent)
         startServiceButton.setOnClickListener {
 
-            startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), REQUEST_MEDIA_PROJECTION)
+            startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), REQUEST_CODE_SCREENSHOT)
 
         }
 

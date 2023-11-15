@@ -31,6 +31,7 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.util.SparseIntArray
 import android.view.Surface
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -46,6 +47,7 @@ class ScreenshotService : Service() {
     private lateinit var mediaProjection: MediaProjection
     private lateinit var imageReader: ImageReader
     private lateinit var virtualDisplay: VirtualDisplay
+    private lateinit var displayMetrics : DisplayMetrics
     private val handler = Handler(Looper.getMainLooper())
     private var screenDensity = 320
     private val NOTIFICATION_ID = 1
@@ -148,20 +150,16 @@ class ScreenshotService : Service() {
                 getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
             mediaProjection =
                 data?.let { mediaProjectionManager.getMediaProjection(resultCode, it) }!!
-            createImageReader()
+         displayMetrics = DisplayMetrics()
+        (getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.getMetrics(displayMetrics)
+        imageReader = ImageReader.newInstance(displayMetrics.widthPixels, displayMetrics.heightPixels, PixelFormat.RGBA_8888, 2)
             startCapture()
-    }
-
-    private fun createImageReader() {
-        val width = DISPLAY_WIDTH
-        val height = DISPLAY_HEIGHT
-        imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
     }
 
     private fun startCapture() {
         virtualDisplay = mediaProjection.createVirtualDisplay(
             "ScreenshotService",
-            DISPLAY_WIDTH, DISPLAY_HEIGHT, screenDensity,
+            displayMetrics.widthPixels , displayMetrics.heightPixels, screenDensity,
             DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
             imageReader.surface, null, null
         )
@@ -174,7 +172,7 @@ class ScreenshotService : Service() {
     }
 
     private fun captureScreenshot() {
-        val image : Image = imageReader.acquireLatestImage()
+        val image : Image = imageReader.acquireNextImage()
         if (image != null) {
             imageToBitmap(image)
             image.close()
@@ -221,10 +219,7 @@ class ScreenshotService : Service() {
 
 
     companion object {
-        private const val DISPLAY_WIDTH = 720
-        private const val DISPLAY_HEIGHT = 1280
         private const val CAPTURE_INTERVAL = 60 * 1000 // 1 minute
-
         private val ORIENTATION = SparseIntArray()
 
         init {
