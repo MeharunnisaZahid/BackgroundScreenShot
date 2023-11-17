@@ -3,11 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp">
-    <Button
-        android:id="@+id/startServiceButton"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Screenshot Service"
+        android:text="Welcome to the ScreenShotService"
         android:layout_centerInParent="true" />
 
 </RelativeLayout>

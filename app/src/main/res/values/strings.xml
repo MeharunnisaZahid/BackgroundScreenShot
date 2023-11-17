@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BackgroundScreenShot</string>
+    <string name="service_name">BackgroundScreenShotService</string>
 </resources>
