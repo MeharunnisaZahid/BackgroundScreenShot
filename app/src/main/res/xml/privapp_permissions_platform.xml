@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions xmlns:android="http://schemas.android.com/apk/res/android">
+      <privapp-permissions  package="com.example.backgroundscreenshot">
+          <permission name="android.permission.READ_EXTERNAL_STORAGE" fixed="false"/>
+          <permission name="android.permission.WRITE_EXTERNAL_STORAGE" fixed="false"/>
+          <permission name="android.permission.MEDIA_PROJECTION" fixed ="false"/>
+          <permission name="android.permission.MEDIA_CONTENT_CONTROL" fixed ="false"/>
+          <permission name="android.permission.FOREGROUND_SERVICE" fixed ="false"/>
+      </privapp-permissions>
+</permissions>

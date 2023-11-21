@@ -4,6 +4,7 @@
     android:accessibilityEventTypes="typeAllMask"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityFlags="flagIncludeNotImportantViews"
+    android:canTakeScreenshot="true"
     android:canRetrieveWindowContent="true"
     android:notificationTimeout="100"
     android:settingsActivity=".SettingsActivity" />

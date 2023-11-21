@@ -3,11 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE"
         tools:ignore="ProtectedPermissions" />
-
-    <uses-feature
-        android:name="android.hardware.telephony"
-        android:required="false" />
-
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.CAPTURE_VIDEO_OUTPUT"
@@ -44,13 +39,14 @@
             android:name=".services.ScreenshotService"
             android:label="@string/service_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:foregroundServiceType="mediaProjection"
             android:exported="true">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
+
+
             <meta-data
                 android:name="android.accessibility-service"
                 android:resource="@xml/accessibility_service_config" />
         </service>
+
     </application>
 </manifest>
